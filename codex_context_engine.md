@@ -40,7 +40,6 @@ It must dynamically inspect the `iterations/` directory and use whatever numeric
 ---
 
 # PRIMARY GOAL
-
 Install or upgrade the Codex Context Engine in the target repository by applying all required iterations in the correct order.
 The system must be robust, incremental, and safe.
 
@@ -50,7 +49,6 @@ It must never destroy useful state unless cleanup is clearly required and safe.
 ---
 
 # OPERATING MODEL
-
 Treat this repository as the **source of truth** for the Codex Context Engine.
 Treat the target repository (the repo where this prompt is being executed) as the **installation target**.
 
@@ -59,7 +57,6 @@ Your task is to inspect the target repository, determine what version of the eng
 ---
 
 # DO NOT HARDCODE ITERATION COUNT
-
 Do not assume the latest iteration number is 4.
 Instead:
 1. inspect the local `iterations/` directory in this repository
@@ -74,7 +71,6 @@ The root orchestrator must continue working when new iterations are added later 
 ---
 
 # ITERATION DISCOVERY RULES
-
 Within this repository:
 - only numeric folders under `iterations/` count as iterations
 - ignore non-numeric folders or auxiliary files
@@ -91,7 +87,6 @@ If an iteration folder is malformed:
 ---
 
 # TARGET REPOSITORY DETECTION
-
 Before applying anything, inspect the target repository for signs of an existing Codex Context Engine installation.
 
 Possible evidence may include:
@@ -101,17 +96,17 @@ Possible evidence may include:
 - `.codex_global_metrics/`
 - `.codex_failure_memory/`
 - `.codex_task_memory/`
+- `.codex_memory_graph/`
 - `CONTEXT_SAVINGS.md`
 - files or comments explicitly mentioning `codex_context`
 - iteration metadata files if present
-- prior generated schemas, summaries, scoring metadata, telemetry, optimizer artifacts, planner artifacts, failure-memory artifacts, or task-memory artifacts
+- prior generated schemas, summaries, scoring metadata, telemetry, or diagnostic artifacts
 
 Use these signals to determine whether the engine is already installed and, if possible, which iteration level has already been applied.
 
 ---
 
 # INSTALLATION STATE DETECTION
-
 Your first responsibility is to determine the **current installed iteration** in the target repository.
 Use this strategy, in order:
 
@@ -154,28 +149,35 @@ Example signals by capability:
 - system health report for the engine
 
 ### Iteration 5 signals
-- context budget markers
-- packet cost estimation artifacts
-- optimizer summaries or trimming reports
-- context compression or value-aware optimization logic
+- context packet cost estimation
+- context budget thresholds
+- optimization or trimming reports
+- compression / pruning rules tied to budget
 
 ### Iteration 6 signals
-- planner artifacts
-- pre-execution context planning outputs
-- task/routing hints for retrieval
-- planning metadata linked to packet assembly
+- planning artifacts or planner logic
+- task-type or task-signal classification before retrieval
+- explicit context loading strategy selection
+- predicted repository areas before packet assembly
 
 ### Iteration 7 signals
 - `.codex_failure_memory/`
 - structured failure records
-- root-cause / solution entries
-- debugging-oriented reuse of prior failures
+- stored root causes and fixes
+- retrieval of prior failure patterns during debugging flows
 
 ### Iteration 8 signals
 - `.codex_task_memory/`
-- task-type categories such as bug fixing, refactoring, testing, performance, architecture, or feature work
-- deterministic task-type inference artifacts
-- task-specialized retrieval behavior or summaries
+- task-type-specific knowledge buckets
+- specialized retrieval by workflow category
+- distinct memory slices for tasks such as tests, refactors, debugging, or architecture
+
+### Iteration 9 signals
+- `.codex_memory_graph/`
+- graph node / edge artifacts
+- graph expansion during retrieval
+- relationship-aware context selection
+- bounded connected-context traversal
 
 Infer the highest iteration that is **safely supported by the evidence**.
 If uncertain, prefer a lower installed iteration rather than overestimating.
@@ -186,7 +188,6 @@ If no meaningful evidence exists, assume no installation is present.
 ---
 
 # EXECUTION RULE
-
 Once the current installed iteration is known:
 - if none is installed, apply all iterations in ascending order
 - if iteration N is installed, apply N+1 through latest
@@ -201,9 +202,8 @@ Even if the latest iteration appears installed, you may still:
 ---
 
 # HOW TO APPLY EACH ITERATION
-
 For each missing iteration:
-1. open `iterations/<n>/prompt.md`
+1. open `iterations/<N>/prompt.md`
 2. treat it as the authoritative specification for that iteration
 3. apply the required changes in the target repository
 4. preserve existing compatible state
@@ -221,7 +221,6 @@ Do not skip an intermediate iteration unless:
 ---
 
 # UPGRADE SAFETY RULES
-
 When upgrading an existing installation:
 - preserve memory records whenever possible
 - preserve telemetry unless it is clearly broken or incompatible
@@ -235,7 +234,6 @@ Never erase useful history just because a newer iteration exists.
 ---
 
 # AGENTS.md POLICY
-
 If `AGENTS.md` exists in the target repository:
 - update it carefully
 - merge new engine requirements without destroying unrelated project instructions
@@ -250,7 +248,6 @@ The Codex Context Engine should continue using `AGENTS.md` as the authoritative 
 ---
 
 # STATE TRACKING
-
 To make future upgrades reliable, ensure the installation leaves behind a **clear installed iteration marker** in the target repository.
 
 Preferred options include one of the following:
@@ -271,8 +268,8 @@ This is important so future executions of the root prompt can detect state relia
 ---
 
 # COMPATIBILITY WITH FUTURE ITERATIONS
-
 This root prompt must remain forward-compatible.
+
 That means:
 - do not refer to a fixed final iteration number
 - always derive available iterations from the `iterations/` directory
@@ -284,7 +281,6 @@ This root prompt should remain valid even after Iteration 5, 6, 7, 8, 9, and bey
 ---
 
 # FAILURE HANDLING
-
 If one iteration cannot be applied cleanly:
 1. stop before making unsafe assumptions
 2. preserve the target repository state as much as possible
@@ -297,7 +293,6 @@ If partial upgrade is the safest outcome, say so clearly.
 ---
 
 # VALIDATION AFTER UPGRADE
-
 After applying the missing iterations:
 1. verify that the installed iteration marker reflects the highest successfully applied iteration
 2. verify that major artifacts expected by the applied iterations exist
@@ -311,7 +306,6 @@ Keep it honest and concise.
 ---
 
 # GIT SAFETY
-
 If generated support files are created in Git-controlled directories:
 - update `.gitignore` when appropriate
 - do not accidentally ignore real source files
@@ -319,36 +313,32 @@ If generated support files are created in Git-controlled directories:
 
 ---
 
-# EVOLUTION ROADMAP
-
-The engine evolves through additive capability layers.
-
-- **Iteration 5 — Context Cost Optimizer**  
-  Reduces token usage and latency by estimating packet cost, applying budget thresholds, trimming low-value context, and producing cost observability.
-
-- **Iteration 6 — Context Planner**  
-  Determines what context should be loaded before execution begins, routing retrieval through explicit planning signals.
-
-- **Iteration 7 — Failure Memory**  
-  Stores prior failures, root causes, and reusable fixes so the engine can avoid repeated debugging mistakes.
-
-- **Iteration 8 — Task-Specific Memory**  
-  Adds specialized memory categories by task domain so the engine can retrieve more relevant context for debugging, refactoring, testing, performance work, architecture work, and similar workflows.
-
-- **Iteration 9 — Memory Graph**  
-  Introduces relationship-aware memory so decisions, modules, patterns, and failures can be connected structurally.
-
----
-
 # OUTPUT FORMAT
-
 At the end, return a concise final summary containing:
 1. discovered iterations available in this repository
 2. detected installed iteration in the target repository
 3. whether this was a fresh install or upgrade
-4. which iterations were applied
-5. which files or subsystems were updated
-6. whether an installed iteration marker was created or updated
-7. any warning, limitation, or malformed iteration folder detected
+4. which iterations were applied in this run
+5. whether any repair / normalization was performed
+6. the final installed iteration after successful completion
+7. any important caveat or partial-failure note
 
-Do not provide unnecessary intermediate progress narration unless explicitly requested.
+---
+
+# EVOLUTION ROADMAP
+The engine evolves through incremental capability layers.
+
+## Iteration 5 — Context Cost Optimizer
+Reduces token usage and latency by filtering, deduplicating, compressing, and prioritizing context before it is sent to the model.
+
+## Iteration 6 — Context Planner
+Determines which context should be loaded depending on task type, repository signals, and likely execution scope.
+
+## Iteration 7 — Failure Memory
+Stores previous failures, dead ends, and effective fixes so the engine avoids repeating ineffective actions.
+
+## Iteration 8 — Task-Specific Memory
+Adds specialized memory layers per workflow type so retrieval can adapt to testing, debugging, refactoring, architecture, and similar tasks.
+
+## Iteration 9 — Memory Graph
+Connects memory entities through explicit relationships so the engine can retrieve bounded neighborhoods of related knowledge instead of only flat records.

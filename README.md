@@ -1,17 +1,15 @@
 # Codex Context Engine
 
 **Codex Context Engine** is a prompt-driven system that improves how Codex (and similar coding agents) manage context when working with real software repositories.
-
-Instead of repeatedly sending large prompts explaining the project, the engine installs a **persistent context system** inside the repository. This allows Codex to reuse knowledge across sessions, reduce token usage, and reason more efficiently about the codebase.
+Instead of repeatedly sending large prompts explaining the project, the engine installs a **persistent context system** inside the repository.
+This allows Codex to reuse knowledge across sessions, reduce token usage, and reason more efficiently about the codebase.
 
 The project evolves through **incremental iterations**, each adding new capabilities to the engine.
 
 ---
 
 # Core Idea
-
 AI coding agents normally restart every session with no persistent memory of the project.
-
 That means they must repeatedly learn:
 - project architecture
 - debugging patterns
@@ -34,7 +32,6 @@ The engine stores useful knowledge in the repository and retrieves only the rele
 ---
 
 # How It Works
-
 The system is installed using a **root orchestrator prompt**:
 
 ```text
@@ -54,14 +51,10 @@ This design allows the system to evolve without rewriting the installer every ti
 # Repository Structure
 
 ```text
-codex_context_engine
+codex_context_engine/
 │
-├─ codex_context_engine.md
-│  Root installer / upgrader prompt
-│
-├─ README.md
-│  Project documentation
-│
+├─ codex_context_engine.md      Root installer / upgrader prompt
+├─ README.md                    Project documentation
 └─ codex/
    └─ iterations/
       ├─ 1/
@@ -79,15 +72,6 @@ codex_context_engine
       ├─ 5/
       │  ├─ readme.md
       │  └─ prompt.md
-      ├─ 6/
-      │  ├─ readme.md
-      │  └─ prompt.md
-      ├─ 7/
-      │  ├─ readme.md
-      │  └─ prompt.md
-      ├─ 8/
-      │  ├─ readme.md
-      │  └─ prompt.md
       └─ ...
 ```
 
@@ -97,7 +81,6 @@ The **root orchestrator automatically applies all missing iterations**.
 ---
 
 # Installation
-
 To install or upgrade the engine in a repository:
 1. Open the root prompt:
 
@@ -120,8 +103,8 @@ This works for both:
 ---
 
 # Iteration Model
-
-The engine evolves through incremental iterations. Each iteration adds new functionality while preserving compatibility with previous ones.
+The engine evolves through incremental iterations.
+Each iteration adds new functionality while preserving compatibility with previous ones.
 
 ## Iteration 1 — External Memory Foundation
 Introduces the concept of **persistent context memory** stored inside the repository.
@@ -175,40 +158,51 @@ Features:
 ---
 
 ## Iteration 6 — Context Planner
-Adds a planning layer that predicts what context should be retrieved before execution begins.
+Adds a planning layer that predicts which contextual resources should be loaded before execution starts.
 
 Features:
-- task-aware context planning
-- repository area prediction
-- memory-category routing
-- pre-execution packet shaping
+- task signal analysis
+- context loading strategy selection
+- pre-selection of relevant repository areas
+- context scope and depth planning
 
 ---
 
 ## Iteration 7 — Failure Memory
-Adds a repository-specific troubleshooting layer that records previous failures, root causes, and reusable fixes.
+Adds a repository-specific troubleshooting layer that records failures, dead ends, and successful fixes.
 
 Features:
-- failure pattern storage
-- root-cause summaries
-- reusable solution records
-- debugging-oriented retrieval
+- structured failure records
+- root cause and solution capture
+- retrieval of past debugging knowledge
+- support for safer repeated execution
 
 ---
 
 ## Iteration 8 — Task-Specific Memory
-Adds a specialized memory layer scoped by task type so the engine can retrieve context patterns that are more relevant for debugging, refactoring, testing, performance work, architecture work, and similar task classes.
+Adds specialized memory slices per task type so the engine can retrieve more relevant knowledge depending on the work being done.
 
 Features:
-- deterministic task-type inference
-- specialized task-memory categories
-- task-aware retrieval integration
-- reusable task-domain learning
+- task-category memory storage
+- specialized retrieval by workflow type
+- stronger support for testing, debugging, refactoring, and architecture tasks
+- improved relevance before optimization
+
+---
+
+## Iteration 9 — Memory Graph
+Adds a graph-based relationship layer over the engine’s memory system.
+
+Features:
+- relationship-aware retrieval
+- graph nodes and edges for repository knowledge
+- bounded connected-context expansion
+- integration with planner and optimizer
+- richer architectural context across related entities
 
 ---
 
 # Design Principles
-
 The engine follows several key principles.
 
 ### Minimal Context
@@ -232,7 +226,6 @@ The system should be understandable and inspectable inside the repository.
 ---
 
 # Active Roadmap
-
 The roadmap is ordered by **impact and operational need**.
 
 | Iteration | Feature |
@@ -253,11 +246,10 @@ This order reflects a practical strategy:
 ---
 
 # Summary
-
 Codex Context Engine explores a simple but powerful idea:
 
 > Context should behave like a system, not like a repeated prompt.
 
 By storing useful knowledge inside repositories and retrieving only relevant information, AI coding agents can become faster, cheaper, and more consistent across sessions.
 
-With Iteration 8, the engine now combines generic memory, planner logic, failure knowledge, and task-specific specialization into a more focused context orchestration workflow.
+With Iteration 9, the engine moves beyond isolated memory retrieval and begins connecting knowledge as a **relationship-aware context system**.
