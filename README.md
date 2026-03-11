@@ -46,9 +46,15 @@ Failure Memory
 ↓  
 Task-Specific Memory  
 ↓  
-Memory Graph
-↓
-Granular Telemetry
+Memory Graph  
+↓  
+Granular Telemetry  
+↓  
+Knowledge Mods  
+↓  
+Knowledge Processing Pipeline  
+↓  
+Knowledge Retrieval Engine
 
 Each layer improves how context is selected, used and remembered.
 
@@ -69,6 +75,10 @@ D --> F[Task-Specific Memory]
 E --> G[Memory Graph]
 F --> G
 G --> H[Granular Telemetry]
+
+H --> I[Knowledge Mods]
+I --> J[Knowledge Processing Pipeline]
+J --> K[Knowledge Retrieval Engine]
 ```
 
 ---
@@ -160,6 +170,88 @@ Goal: explain where context and token cost concentrate inside a task, not only a
 
 ---
 
+# Knowledge Mods (Iteration 11)
+
+Iteration 11 introduces **generic knowledge modules ("mods")** and a local learning workspace.
+
+The engine can now create **domain-specific knowledge areas on demand**, allowing Codex to learn structured information about topics relevant to the project.
+
+Example commands:
+
+```
+learn ux
+aprende ux
+study accessibility
+learn architecture
+```
+
+When a mod is requested for the first time, the engine automatically creates a local workspace:
+
+```
+.codex_library/mods/<mod_id>/
+```
+
+This enables Codex to accumulate **domain knowledge across executions**, not just project memory.
+
+---
+
+# Knowledge Processing Pipeline (Iteration 12)
+
+Iteration 12 adds a **document processing pipeline** that converts raw documents into reusable contextual artifacts.
+
+Documents placed in a mod inbox are processed into compact artifacts such as:
+
+```
+notes/
+summaries/
+indices/
+manifests/
+```
+
+Typical pipeline stages:
+
+```
+detect documents
+→ extract text
+→ normalize
+→ semantic split
+→ topic extraction
+→ note generation
+→ summary generation
+→ index generation
+→ manifest update
+```
+
+The goal is to avoid loading large source documents repeatedly and instead reuse **small structured artifacts**.
+
+---
+
+# Knowledge Retrieval Engine (Iteration 13)
+
+Iteration 13 introduces a **retrieval layer** that selects the most relevant artifacts for a given request.
+
+Instead of re-reading entire documents, the engine:
+
+1. detects relevant knowledge mods  
+2. identifies likely topics  
+3. consults lightweight indices  
+4. loads a minimal set of notes or summaries
+
+Example retrieval flow:
+
+```
+request
+→ detect mod
+→ detect topic
+→ consult index
+→ load minimal artifact set
+→ assemble context
+```
+
+This ensures that Codex receives **high-value contextual knowledge with minimal token cost**.
+
+---
+
 # Example
 
 Without the engine:
@@ -178,9 +270,13 @@ Codex executes with focused context
 ↓  
 Failure memory records outcome  
 ↓  
-Memory graph connects new knowledge
-↓
-Granular telemetry explains where the cost concentrated
+Memory graph connects new knowledge  
+↓  
+Telemetry explains cost distribution  
+↓  
+Knowledge mods store domain knowledge  
+↓  
+Retrieval engine loads only relevant artifacts
 
 ---
 
@@ -222,6 +318,70 @@ This reduces exploration cost and accelerates problem solving.
 
 ---
 
+## Knowledge-aware execution
+
+The engine can now also accumulate **domain knowledge**, not just project context.
+
+This allows Codex to reuse learned knowledge across tasks and projects.
+
+---
+
+# Local Knowledge Library
+
+The knowledge system uses a local workspace:
+
+```
+.codex_library/
+```
+
+Typical structure:
+
+```
+.codex_library/
+  registry.json
+  mods/
+    <mod_id>/
+      inbox/
+      sources/
+      processed/
+      notes/
+      summaries/
+      indices/
+      manifests/
+      mod.json
+```
+
+Users can add documents to a mod by placing files in:
+
+```
+.codex_library/mods/<mod_id>/inbox/
+```
+
+Example:
+
+```
+.codex_library/mods/ux/inbox/about_face.pdf
+```
+
+Running the learning command again triggers processing.
+
+---
+
+# MCP Support
+
+The knowledge system is designed to integrate with MCP servers when available:
+
+- **filesystem MCP** — local document access
+- **git MCP** — repository awareness
+- **fetch MCP** — optional external enrichment
+- **playwright MCP** — UI inspection for UX-related knowledge
+
+All MCP integrations remain **optional**.
+
+The engine continues to function fully in **local-only mode**.
+
+---
+
 # What This Is Not
 
 This project is **not**:
@@ -257,6 +417,9 @@ The engine currently implements:
 - task-specific contextual memory
 - graph-based contextual relationships
 - granular task-plus-phase telemetry
+- generic domain knowledge modules
+- document ingestion and processing
+- knowledge retrieval with minimal context loading
 
 Together these components create a layered contextual architecture that progressively improves Codex performance on complex repositories.
 
