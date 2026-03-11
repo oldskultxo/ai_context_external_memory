@@ -241,6 +241,48 @@ Together these components create a layered contextual architecture that progress
 
 ---
 
+# Auto-Initialize Across `~/projects`
+
+If you want every Git repository under `~/projects` to be integrated automatically, use the cross-project installer plus the macOS `launchd` agent in `scripts/`.
+
+Requirement:
+
+- Ruby must be installed and available in `PATH`, because the repository scanner runs through `scripts/install_cross_project_for_all_repos.rb`
+
+Manual one-shot integration:
+
+```bash
+ruby scripts/install_cross_project_for_all_repos.rb
+```
+
+Automatic background integration on macOS:
+
+```bash
+./scripts/install_launch_agent.sh
+```
+
+What this does:
+
+- scans `~/projects` for Git repositories
+- creates or updates `.codex_context_engine/state.json` in each repository
+- creates `AGENTS.md` when missing
+- appends or refreshes a managed `codex_context_engine` block inside an existing `AGENTS.md`
+- re-runs automatically at login, every 5 minutes, and whenever `~/projects` changes
+
+Useful environment variables:
+
+- `CODEX_PROJECTS_DIR` to target a directory other than `~/projects`
+- `CODEX_ENGINE_REPO` to point to a shared engine repository in a different path
+- `CODEX_LAUNCH_AGENT_LABEL` to override the default `launchd` label
+
+To remove the background agent:
+
+```bash
+./scripts/uninstall_launch_agent.sh
+```
+
+---
+
 # Philosophy
 
 The engine follows a simple principle:

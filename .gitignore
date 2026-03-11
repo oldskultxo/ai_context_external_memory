@@ -1,2 +1,12 @@
 .DS_Store
 AGENTS.md
+.codex_context_engine/
+.codex_memory/
+.context_metrics/
+.codex_global_metrics/
+.codex_cost/
+.codex_planner/
+.codex_failure_memory/
+.codex_task_memory/
+.codex_memory_graph/
+CONTEXT_SAVINGS.md

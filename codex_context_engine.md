@@ -220,6 +220,20 @@ Do not skip an intermediate iteration unless:
 
 ---
 
+# RUNTIME DEPENDENCY BOOTSTRAP
+After all required iterations have been applied, verify whether `ruby` is installed before running engine maintenance or integration scripts.
+
+Rules:
+- check for `ruby` explicitly
+- if `ruby` is not available, install it using the safest native package path for the host environment
+- only proceed to Ruby-based engine scripts after Ruby is available
+- if Ruby installation fails, report the failure clearly and do not pretend script execution succeeded
+
+This applies in particular to cross-project integration flows that execute scripts such as:
+- `scripts/install_cross_project_for_all_repos.rb`
+
+---
+
 # UPGRADE SAFETY RULES
 When upgrading an existing installation:
 - preserve memory records whenever possible
@@ -296,9 +310,11 @@ If partial upgrade is the safest outcome, say so clearly.
 After applying the missing iterations:
 1. verify that the installed iteration marker reflects the highest successfully applied iteration
 2. verify that major artifacts expected by the applied iterations exist
-3. verify that the installation remains coherent
-4. verify that no obvious destructive conflict was introduced
-5. report any caveat or incomplete area
+3. verify that required runtime dependencies for bundled scripts are available, especially `ruby` when `.rb` scripts are part of the installation
+4. execute the required engine scripts after dependency checks succeed
+5. verify that the installation remains coherent
+6. verify that no obvious destructive conflict was introduced
+7. report any caveat or incomplete area
 
 Do not fabricate validation.
 Keep it honest and concise.
