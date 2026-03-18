@@ -212,6 +212,13 @@ Example signals by capability:
 - code paths that load compact knowledge artifacts instead of raw documents
 - evidence of topic-aware knowledge retrieval
 
+### Iteration 14 signals
+- `.codex_library/REFERENCES_TEMPLATE.md` exists
+- any `inbox/references.md` file inside a mod directory
+- `manifests/state.json` of any mod contains a `referenced_files` key
+- processing logic that parses `references.md` and tracks `mtime` alongside hash in state
+- support for `.sql`, `.xml`, `.json`, `.yaml`, `.py`, `.csv` as ingestible formats via references
+
 Infer the highest iteration that is **safely supported by the evidence**.
 If uncertain, prefer a lower installed iteration rather than overestimating.
 
