@@ -3,29 +3,29 @@
 You are tasked with operating as the **root installer / upgrader orchestrator** for the `codex_context_engine` project.
 
 This repository is structured as an **evolutionary prompt system**.
+
 The canonical layout is:
 
 ```text
 iterations/
   1/
     readme.md
-    prompt.md
+    <iteration_spec>.md
   2/
     readme.md
-    prompt.md
+    <iteration_spec>.md
   3/
     readme.md
-    prompt.md
-  4/
-    readme.md
-    prompt.md
+    <iteration_spec>.md
   ...
 ```
 
 Each numeric iteration represents a cumulative improvement to the same system.
 
 The root prompt must **not** assume that the latest iteration fully replaces all previous ones.
+
 Instead, the root prompt must:
+
 1. detect the current installed iteration in the target repository
 2. determine which iterations are missing
 3. execute the missing iterations in ascending numeric order
@@ -40,7 +40,9 @@ It must dynamically inspect the `iterations/` directory and use whatever numeric
 ---
 
 # PRIMARY GOAL
+
 Install or upgrade the Codex Context Engine in the target repository by applying all required iterations in the correct order.
+
 The system must be robust, incremental, and safe.
 
 It must never blindly reinstall everything if a partial or full installation already exists.
@@ -49,7 +51,9 @@ It must never destroy useful state unless cleanup is clearly required and safe.
 ---
 
 # OPERATING MODEL
+
 Treat this repository as the **source of truth** for the Codex Context Engine.
+
 Treat the target repository (the repo where this prompt is being executed) as the **installation target**.
 
 Your task is to inspect the target repository, determine what version of the engine is already installed, and then apply only the iterations that are still missing.
@@ -57,8 +61,11 @@ Your task is to inspect the target repository, determine what version of the eng
 ---
 
 # DO NOT HARDCODE ITERATION COUNT
+
 Do not assume the latest iteration number is 4.
+
 Instead:
+
 1. inspect the local `iterations/` directory in this repository
 2. discover all numeric iteration folders dynamically
 3. sort them numerically ascending
@@ -71,14 +78,25 @@ The root orchestrator must continue working when new iterations are added later 
 ---
 
 # ITERATION DISCOVERY RULES
+
 Within this repository:
+
 - only numeric folders under `iterations/` count as iterations
 - ignore non-numeric folders or auxiliary files
-- each valid iteration folder should contain:
-  - `readme.md`
-  - `prompt.md`
+
+Each valid iteration folder should contain:
+
+- `readme.md`
+- one execution-ready iteration specification file in Markdown form
+
+Preferred patterns for the execution-ready specification file:
+
+1. `prompt.md`
+2. if `prompt.md` does not exist, exactly one other non-`readme.md` Markdown file
+3. if multiple candidate Markdown files exist, prefer the one whose filename best matches the iteration topic and report the choice clearly
 
 If an iteration folder is malformed:
+
 - do not fail immediately
 - report the issue clearly
 - continue if safe
@@ -87,9 +105,11 @@ If an iteration folder is malformed:
 ---
 
 # TARGET REPOSITORY DETECTION
+
 Before applying anything, inspect the target repository for signs of an existing Codex Context Engine installation.
 
 Possible evidence may include:
+
 - `AGENTS.md`
 - `.codex_memory/`
 - `.context_metrics/`
@@ -99,6 +119,7 @@ Possible evidence may include:
 - `.codex_memory_graph/`
 - `.codex_library/`
 - `CONTEXT_SAVINGS.md`
+- `.codex_context_engine/state.json`
 - files or comments explicitly mentioning `codex_context`
 - iteration metadata files if present
 - prior generated schemas, summaries, scoring metadata, telemetry, or diagnostic artifacts
@@ -108,18 +129,24 @@ Use these signals to determine whether the engine is already installed and, if p
 ---
 
 # INSTALLATION STATE DETECTION
+
 Your first responsibility is to determine the **current installed iteration** in the target repository.
+
 Use this strategy, in order:
 
 ## 1. Explicit state markers
+
 If the target repository contains a clear iteration/version marker, use it.
+
 Examples:
 - installed iteration metadata file
 - version field in a configuration file
 - explicit note in generated engine artifacts
 
 ## 2. Structural capability detection
+
 If no explicit marker exists, infer the installed iteration by detecting installed capabilities.
+
 Use conservative inference.
 
 Example signals by capability:
@@ -192,8 +219,8 @@ Example signals by capability:
 - `.codex_library/registry.json`
 - `.codex_library/mods/`
 - mod manifests such as `.codex_library/mods/<mod_id>/mod.json`
-- evidence of knowledge mods created through commands such as `learn <mod>` or `aprende <mod>`
-- engine artifacts referencing "knowledge mods" or local domain learning
+- evidence of knowledge mods created through commands such as `learn <topic>` or `aprende <tema>`
+- engine artifacts referencing knowledge mods or local domain learning
 
 ### Iteration 12 signals
 - processed knowledge artifacts under `.codex_library/mods/<mod_id>/`
@@ -231,21 +258,36 @@ Example signals by capability:
 - canonical inbox documents produced from remote URLs preserve source traceability
 - remote documentation sources are materialized locally before learning or retrieval
 
+### Iteration 16 signals
+- an engine state marker records `installed_iteration >= 16`
+- an engine state marker or managed config records `communication_mode: caveman_full` or equivalent
+- `AGENTS.md` contains an engine-managed block that explicitly enforces compressed execution-time communication
+- prior engine-managed verbosity rules have been replaced by concise communication rules
+- execution updates are explicitly suppressed by default while work is in progress
+- final output is instructed to use compact structures such as `found -> cause -> fix` or `done -> files -> tests`
+- runtime guidance explicitly forbids decorative formatting in results
+- engine-managed communication guidance explicitly limits caveman mode to runtime communication rather than all repository prose
+
 Infer the highest iteration that is **safely supported by the evidence**.
+
 If uncertain, prefer a lower installed iteration rather than overestimating.
 
 ## 3. Fresh install assumption
+
 If no meaningful evidence exists, assume no installation is present.
 
 ---
 
 # EXECUTION RULE
+
 Once the current installed iteration is known:
+
 - if none is installed, apply all iterations in ascending order
-- if iteration N is installed, apply N+1 through latest
+- if iteration `N` is installed, apply `N+1` through latest
 - if latest is already installed, do not reinstall blindly
 
 Even if the latest iteration appears installed, you may still:
+
 - normalize malformed files
 - repair clearly incomplete artifacts
 - report inconsistencies
@@ -254,14 +296,17 @@ Even if the latest iteration appears installed, you may still:
 ---
 
 # HOW TO APPLY EACH ITERATION
+
 For each missing iteration:
-1. open `iterations/<N>/prompt.md`
-2. treat it as the authoritative specification for that iteration
-3. apply the required changes in the target repository
-4. preserve existing compatible state
-5. perform migrations only when necessary
-6. avoid duplicating content unnecessarily
-7. continue to the next missing iteration
+
+1. open `iterations/<n>/readme.md`
+2. locate the execution-ready specification file for that iteration
+3. treat that specification file as the authoritative implementation prompt
+4. apply the required changes in the target repository
+5. preserve existing compatible state
+6. perform migrations only when necessary
+7. avoid duplicating content unnecessarily
+8. continue to the next missing iteration
 
 You must apply iterations strictly in ascending order.
 
@@ -273,6 +318,7 @@ Do not skip an intermediate iteration unless:
 ---
 
 # RUNTIME DEPENDENCY BOOTSTRAP
+
 After all required iterations have been applied, verify whether `ruby` is installed before running engine maintenance or integration scripts.
 
 Rules:
@@ -287,7 +333,9 @@ This applies in particular to cross-project integration flows that execute scrip
 ---
 
 # UPGRADE SAFETY RULES
+
 When upgrading an existing installation:
+
 - preserve memory records whenever possible
 - preserve telemetry unless it is clearly broken or incompatible
 - preserve preferences unless normalization is required
@@ -301,7 +349,9 @@ Never erase useful history just because a newer iteration exists.
 ---
 
 # AGENTS.md POLICY
+
 If `AGENTS.md` exists in the target repository:
+
 - update it carefully
 - merge new engine requirements without destroying unrelated project instructions
 - avoid duplicated sections
@@ -315,6 +365,7 @@ The Codex Context Engine should continue using `AGENTS.md` as the authoritative 
 ---
 
 # STATE TRACKING
+
 To make future upgrades reliable, ensure the installation leaves behind a **clear installed iteration marker** in the target repository.
 
 Preferred options include one of the following:
@@ -327,123 +378,43 @@ The marker should minimally record:
 - installed iteration number
 - timestamp of last upgrade
 
+For Iteration 16 and later, the marker should also record communication layer status when available, such as:
+- `communication_layer`
+- `communication_mode`
+
 Keep it lightweight and machine-readable.
 
 If a compatible marker already exists, update it.
+
 This is important so future executions of the root prompt can detect state reliably.
 
 ---
 
 # COMPATIBILITY WITH FUTURE ITERATIONS
+
 This root prompt must remain forward-compatible.
 
-That means:
-- do not refer to a fixed final iteration number
-- always derive available iterations from the `iterations/` directory
-- always use discovered iteration prompts as the source of truth
-- always upgrade only from current state to latest discovered state
+Future iterations may:
+- add new memory layers
+- add new optimization passes
+- add new knowledge mechanisms
+- add new communication policies
+- add new install scripts or metadata
 
-This root prompt should remain valid even after Iteration 5, 6, 7, 8, 9, and beyond are added.
+Do not assume future iterations will reuse the filename `prompt.md`.
 
----
+Do assume that each valid iteration folder will contain:
+- `readme.md`
+- one primary execution-ready Markdown spec
 
-# FAILURE HANDLING
-If one iteration cannot be applied cleanly:
-1. stop before making unsafe assumptions
-2. preserve the target repository state as much as possible
-3. report exactly which iteration failed and why
-4. report which iterations were successfully applied before the failure
-5. do not pretend the engine is fully upgraded if it is not
-
-If partial upgrade is the safest outcome, say so clearly.
+If naming patterns evolve, choose the most likely primary spec conservatively and report your choice.
 
 ---
 
-# VALIDATION AFTER UPGRADE
-After applying the missing iterations:
-1. verify that the installed iteration marker reflects the highest successfully applied iteration
-2. verify that major artifacts expected by the applied iterations exist
-3. verify that required runtime dependencies for bundled scripts are available, especially `ruby` when `.rb` scripts are part of the installation
-4. execute the required engine scripts after dependency checks succeed
-5. verify that the installation remains coherent
-6. verify that no obvious destructive conflict was introduced
-7. report any caveat or incomplete area
+# FINAL OPERATING PRINCIPLE
 
-Do not fabricate validation.
-Keep it honest and concise.
-
----
-
-# GIT SAFETY
-If generated support files are created in Git-controlled directories:
-- update `.gitignore` when appropriate
-- do not accidentally ignore real source files
-- preserve intentional tracking if the repository already tracks certain engine artifacts on purpose
-
----
-
-# OUTPUT FORMAT
-At the end, return a concise final summary containing:
-1. discovered iterations available in this repository
-2. detected installed iteration in the target repository
-3. whether this was a fresh install or upgrade
-4. which iterations were applied in this run
-5. whether any repair / normalization was performed
-6. the final installed iteration after successful completion
-7. any important caveat or partial-failure note
-8. whether granular telemetry / phase-level instrumentation is supported after the run
-9. whether mods, library, references ingestion, remote ingestion, and MCP instrumentation are supported after the run
-10. the status of the tool
-
----
-
-# EVOLUTION ROADMAP
-The engine evolves through incremental capability layers.
-
-## Iteration 5 — Context Cost Optimizer
-Reduces token usage and latency by filtering, deduplicating, compressing, and prioritizing context before it is sent to the model.
-
-## Iteration 6 — Context Planner
-Determines which context should be loaded depending on task type, repository signals, and likely execution scope.
-
-## Iteration 7 — Failure Memory
-Stores previous failures, dead ends, and effective fixes so the engine avoids repeating ineffective actions.
-
-## Iteration 8 — Task-Specific Memory
-Adds specialized memory layers per workflow type so retrieval can adapt to testing, debugging, refactoring, architecture, and similar tasks.
-
-## Iteration 9 — Memory Graph
-Connects memory entities through explicit relationships so the engine can retrieve bounded neighborhoods of related knowledge instead of only flat records.
-
-## Iteration 10 — Granular Telemetry
-Extends savings telemetry from task-only estimates into backward-compatible task-plus-phase instrumentation so the engine can identify which subtasks, loops, or prompt phases consume the most context and tokens.
-
-## Iteration 11 — Knowledge Mods
-Introduces a generic mod system and a local knowledge workspace (`.codex_library/`) that allows Codex to learn domain knowledge across executions.
-
-Knowledge areas can be created dynamically (for example `learn ux` or `learn accessibility`) and persist structured knowledge about those domains.
-
-## Iteration 12 — Knowledge Processing Pipeline
-Adds a document ingestion pipeline that converts raw documents into compact reusable artifacts such as notes, summaries, and indices.
-
-This allows the engine to reuse structured knowledge without repeatedly loading full source documents.
-
-## Iteration 13 — Knowledge Retrieval Engine
-Adds a retrieval layer that selects the most relevant artifacts from the local knowledge library for a given request.
-
-Instead of loading large documents, the engine uses indices and retrieval maps to assemble minimal high-value context packs.
-
-## Iteration 14 — Reference-Based Ingestion
-Adds support for learning from referenced local files without copying them manually into a mod inbox.
-
-The engine can process a mod-level `inbox/references.md`, resolve supported referenced files, track them in mod state with hash and `mtime`, and route their extracted content through the existing knowledge processing pipeline.
-
-This extends ingestion beyond manually dropped documents and is especially useful for structured project assets such as `.sql`, `.xml`, `.json`, `.yaml`, `.yml`, `.py`, and `.csv`.
-
-## Iteration 15 — Remote Knowledge Ingestion
-Adds a remote acquisition layer that lets mods register documentation URLs, fetch them, materialize local snapshots, extract normalized text, and emit canonical local documents for the existing knowledge pipeline.
-
-This iteration does **not** make retrieval depend on live web access.
-It follows the principle:
-
-**remote acquisition, local reasoning**
+Install incrementally.
+Upgrade safely.
+Preserve state.
+Discover iterations dynamically.
+Apply the authoritative iteration spec, not assumptions about its filename.

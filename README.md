@@ -14,12 +14,11 @@ The result is a system that becomes **more efficient, more aware of project stru
 
 `codex_context_engine` is the canonical runtime.
 
-Operational entrypoints now live in this repository:
+Operational entrypoints currently shipped in this repository:
 
-- `python3 scripts/boot.py --repo <path>`
-- `python3 scripts/packet.py --task "..."`
-- `python3 scripts/query.py <term>`
-- `python3 scripts/global_metrics.py --refresh`
+- `ruby scripts/install_cross_project_for_all_repos.rb`
+- `./scripts/install_launch_agent.sh`
+- `./scripts/uninstall_launch_agent.sh`
 
 In cross-project mode, task packets now write telemetry both to the shared root `.context_metrics/` layer and to `.context_metrics/projects/<repo>/`, so savings reports can be attributed per repository.
 
@@ -56,6 +55,8 @@ Context Cost Optimizer
 ↓  
 Execution  
 ↓  
+Communication Compression Layer  
+↓  
 Failure Memory  
 ↓  
 Task-Specific Memory  
@@ -82,23 +83,23 @@ Each layer improves how context is selected, used and remembered.
 
 ```mermaid
 flowchart TD
+    A[Task] --> B[Context Planner]
+    B --> C[Context Cost Optimizer]
+    C --> D[Execution]
+    D --> E[Communication Compression Layer]
 
-A[Task] --> B[Context Planner]
-B --> C[Context Cost Optimizer]
-C --> D[Execution]
+    E --> F[Failure Memory]
+    E --> G[Task-Specific Memory]
 
-D --> E[Failure Memory]
-D --> F[Task-Specific Memory]
+    F --> H[Memory Graph]
+    G --> H
+    H --> I[Granular Telemetry]
 
-E --> G[Memory Graph]
-F --> G
-G --> H[Granular Telemetry]
-
-H --> I[Knowledge Mods]
-I --> J[Knowledge Processing Pipeline]
-J --> K[Knowledge Retrieval Engine]
-K --> L[Reference-Based Ingestion]
-L --> M[Remote Knowledge Ingestion]
+    I --> J[Knowledge Mods]
+    J --> K[Knowledge Processing Pipeline]
+    K --> L[Knowledge Retrieval Engine]
+    L --> M[Reference-Based Ingestion]
+    M --> N[Remote Knowledge Ingestion]
 ```
 
 ---
@@ -108,7 +109,6 @@ L --> M[Remote Knowledge Ingestion]
 Determines **which contextual resources should be loaded** for a given task.
 
 Responsibilities:
-
 - detect task type
 - select relevant context sources
 - control context depth
@@ -123,7 +123,6 @@ Goal: load the *right* context before execution begins.
 Reduces token usage and latency by filtering context before it reaches the model.
 
 Responsibilities:
-
 - deduplicate context blocks
 - score contextual relevance
 - filter oversized or low-value entries
@@ -133,12 +132,46 @@ Goal: ensure only high-value context is sent to the model.
 
 ---
 
+# Communication Compression Layer (Iteration 16)
+
+Iteration 16 introduces a **communication compression layer** inspired by Caveman-style agent communication.
+
+The purpose of this layer is to reduce token waste in **execution-time communication** without degrading reasoning quality, code quality, or technical precision.
+
+The engine already optimizes:
+- what context gets loaded
+- what context gets filtered
+- what knowledge gets retrieved
+
+Iteration 16 adds optimization for:
+- how the agent reports progress
+- how implementation findings are communicated
+- how execution summaries are delivered
+- how much output-token waste is spent on filler and repeated phrasing
+
+Default behavior:
+- no intermediate execution updates while work is in progress
+- final output only by default
+- minimal filler
+- direct reporting of findings, files, tests, risks, and decisions
+- no decorative formatting in runtime results
+- compressed communication for the execution loop only
+
+Important boundary:
+- this layer affects **runtime communication**
+- it does **not** automatically rewrite repository prose, docs, marketing copy, or narrative content into caveman style
+
+Core principle:
+
+> reason full, speak lean
+
+---
+
 # Failure Memory
 
 Captures knowledge about **what did not work**.
 
 Responsibilities:
-
 - record failed attempts
 - detect recurring friction points
 - surface relevant failure patterns
@@ -152,7 +185,6 @@ Goal: prevent the engine from repeating ineffective strategies.
 Stores contextual knowledge associated with specific types of tasks.
 
 Responsibilities:
-
 - classify tasks into contextual domains
 - persist task-related insights
 - retrieve domain-relevant context
@@ -166,7 +198,6 @@ Goal: improve contextual precision for repeated workflows.
 Transforms contextual memory into a **connected knowledge structure**.
 
 Responsibilities:
-
 - link tasks, files and decisions
 - map contextual relationships
 - enable graph-based context discovery
@@ -180,7 +211,6 @@ Goal: move from isolated memory records to connected contextual knowledge.
 Extends telemetry from whole-task estimates into **task-plus-phase observability**.
 
 Responsibilities:
-
 - preserve backward-compatible task-level savings logs
 - support optional phase/subtask instrumentation
 - identify expensive task segments such as repo scan, test loops, or follow-up prompts
@@ -232,14 +262,14 @@ Typical pipeline stages:
 
 ```text
 detect documents
-→ extract text
-→ normalize
-→ semantic split
-→ topic extraction
-→ note generation
-→ summary generation
-→ index generation
-→ manifest update
+-> extract text
+-> normalize
+-> semantic split
+-> topic extraction
+-> note generation
+-> summary generation
+-> index generation
+-> manifest update
 ```
 
 The goal is to avoid loading large source documents repeatedly and instead reuse **small structured artifacts**.
@@ -261,11 +291,11 @@ Example retrieval flow:
 
 ```text
 request
-→ detect mod
-→ detect topic
-→ consult index
-→ load minimal artifact set
-→ assemble context
+-> detect mod
+-> detect topic
+-> consult index
+-> load minimal artifact set
+-> assemble context
 ```
 
 This ensures that Codex receives **high-value contextual knowledge with minimal token cost**.
@@ -274,45 +304,23 @@ This ensures that Codex receives **high-value contextual knowledge with minimal 
 
 # Reference-Based Ingestion (Iteration 14)
 
-Iteration 14 adds support for **learning from referenced local files** instead of requiring every source file to be copied manually into a mod inbox.
+Iteration 14 lets a mod ingest files **without copying them into the inbox**.
 
-A mod can define:
+A mod can track external files through:
 
 ```text
 .codex_library/mods/<mod_id>/inbox/references.md
 ```
 
-The engine uses that file as a reference manifest, resolves supported local paths, and processes the referenced files through the existing knowledge pipeline.
+The pipeline reads `references.md` during processing and can ingest supported files from elsewhere in the repository or filesystem.
 
-This iteration is designed for cases where the source material already exists in the repository or elsewhere on disk and should remain in place.
+Key behaviors:
+- supports file references outside the inbox
+- tracks changes by modification time
+- invalidates stale derived artifacts automatically
+- regenerates notes, summaries, indices, and manifests when needed
 
-## Iteration 14 capabilities
-
-- parse `inbox/references.md` inside a mod
-- resolve referenced local files safely
-- track referenced files in mod state
-- store both content hash and `mtime` for change detection
-- reprocess only when a referenced file changes
-- support structured and code-adjacent file types through references
-
-## Supported reference-oriented formats
-
-- `.sql`
-- `.xml`
-- `.json`
-- `.yaml`
-- `.yml`
-- `.py`
-- `.csv`
-
-## Iteration 14 state expectations
-
-Evidence of Iteration 14 typically includes:
-
-- `.codex_library/REFERENCES_TEMPLATE.md`
-- one or more `inbox/references.md` files
-- `manifests/state.json` containing `referenced_files`
-- processing logic that uses both hash and `mtime`
+This reduces duplication and keeps mod knowledge tied directly to the real source files.
 
 ---
 
@@ -320,45 +328,35 @@ Evidence of Iteration 14 typically includes:
 
 Iteration 15 adds a **remote acquisition layer** to the engine.
 
-The goal is not to make the engine depend on live web access during retrieval.
-Instead, the engine can now ingest documentation from URLs, convert the fetched content into local reproducible artifacts, and then feed those artifacts into the existing local knowledge pipeline.
+The goal is not to make retrieval depend on live web access.
+Instead, the engine can:
 
-This follows the principle:
+- register documentation URLs
+- fetch them
+- snapshot them locally
+- extract normalized text
+- emit canonical local documents into the existing pipeline
 
-> **remote acquisition, local reasoning**
+This keeps the engine aligned with the principle:
 
-## Iteration 15 capabilities
+> remote acquisition, local reasoning
 
-- register URL-based sources under a mod
-- fetch registered remote sources
-- store raw payloads locally
-- create snapshot metadata records per fetch
-- extract normalized text from supported remote formats
-- emit canonical inbox documents for the existing learning flow
-- preserve traceability from local artifact back to source URL
+Inside each mod, remote sources live under:
 
-## Example commands
-
-```bash
-codex-context mod add-source android_core --url https://developer.android.com/guide --tag android --tag official-docs
-codex-context mod fetch-sources android_core
-codex-context mod learn android_core
+```text
+.codex_library/mods/<mod_id>/remote_sources/
 ```
 
-## Supported remote formats
+with subfolders such as:
 
-- HTML
-- PDF
-- Markdown
-- TXT
+```text
+manifest.json
+raw/
+snapshots/
+extracted/
+```
 
-## Remote ingestion design rules
-
-- remote sources are used only during ingestion
-- retrieval remains local-first
-- snapshots should be reproducible
-- raw, extracted, and inbox artifacts should remain traceable
-- this iteration is not an open-ended crawler
+The fetched outputs are then routed back into the normal local learning flow.
 
 ---
 
@@ -366,7 +364,10 @@ codex-context mod learn android_core
 
 Without the engine:
 
-Task → Codex explores the repository → builds context → executes
+Task  
+→ Codex explores the repository  
+→ builds context  
+→ executes
 
 With `codex_context_engine`:
 
@@ -378,6 +379,8 @@ Optimizer filters context
 ↓  
 Codex executes with focused context  
 ↓  
+Communication layer compresses runtime updates  
+↓  
 Failure memory records outcome  
 ↓  
 Memory graph connects new knowledge  
@@ -386,11 +389,7 @@ Telemetry explains cost distribution
 ↓  
 Knowledge mods store domain knowledge  
 ↓  
-Retrieval engine loads only relevant artifacts  
-↓  
-Reference-based ingestion expands local learning sources  
-↓  
-Remote ingestion converts URLs into local knowledge
+Retrieval engine loads only relevant artifacts
 
 ---
 
@@ -407,7 +406,6 @@ Each execution improves future executions.
 ## Context-first execution
 
 Instead of immediately running a task, the engine first determines:
-
 - what context exists
 - what context is relevant
 - what context should be ignored
@@ -417,7 +415,6 @@ Instead of immediately running a task, the engine first determines:
 ## External memory
 
 Contextual knowledge is stored outside the model, allowing:
-
 - persistent project awareness
 - cross-task learning
 - reproducible contextual state
@@ -440,11 +437,11 @@ This allows Codex to reuse learned knowledge across tasks and projects.
 
 ---
 
-## Local-first retrieval
+## Communication-efficient execution
 
-Even when knowledge comes from references or URLs, retrieval still operates on local artifacts.
+The engine now also optimizes **how runtime information is communicated**.
 
-This preserves determinism, reduces dependency on live systems, and keeps context assembly reproducible.
+This reduces token waste in long implementation loops by compressing progress updates, findings, and execution summaries while preserving technical precision.
 
 ---
 
@@ -460,66 +457,41 @@ Typical structure:
 
 ```text
 .codex_library/
-  registry.json                      # global mod registry
-  REFERENCES_TEMPLATE.md             # template for reference-based ingestion
+  registry.json
   mods/
     <mod_id>/
-      mod.json                       # mod metadata and configuration
-      inbox/                         # canonical local documents waiting to be processed
-      inbox/references.md            # optional reference manifest for Iteration 14
-      sources/                       # local source staging area used by prior learning flows
-      processed/                     # processed intermediate artifacts
-      notes/                         # compact note artifacts for retrieval
-      summaries/                     # higher-level summaries for retrieval
-      indices/                       # topic/index lookup artifacts
-      manifests/                     # mod state, manifests, and processing metadata
-      remote_sources/                # Iteration 15 remote acquisition workspace
-      remote_sources/manifest.json   # registered remote URL sources
-      remote_sources/raw/            # raw fetched payloads
-      remote_sources/snapshots/      # per-fetch metadata manifests
-      remote_sources/extracted/      # normalized extracted text from remote sources
+      inbox/
+      remote_sources/
+      sources/
+      processed/
+      notes/
+      summaries/
+      indices/
+      manifests/
+      mod.json
 ```
 
-## Folder and file purposes
+Users can add source documents to a mod in three ways:
 
-- `registry.json` — tracks available mods in the local knowledge library
-- `REFERENCES_TEMPLATE.md` — provides the standard template for `references.md`
-- `mod.json` — stores per-mod metadata, identity, and settings
-- `inbox/` — receives canonical local documents to be processed by the learning pipeline
-- `inbox/references.md` — lists referenced local files that should be learned without copying them manually
-- `sources/` — keeps source-stage material used by existing local ingestion flows
-- `processed/` — stores intermediate processing outputs
-- `notes/` — stores compact reusable notes selected by retrieval
-- `summaries/` — stores condensed thematic summaries
-- `indices/` — stores lightweight lookup structures for topic-aware retrieval
-- `manifests/` — stores state, manifests, hashes, timestamps, and processing metadata
-- `remote_sources/manifest.json` — registers remote documentation sources for the mod
-- `remote_sources/raw/` — stores original fetched remote payloads
-- `remote_sources/snapshots/` — stores fetch-time metadata for reproducibility and traceability
-- `remote_sources/extracted/` — stores normalized text extracted from remote sources before inbox materialization
+### Option A — drop files into the inbox
 
-## Reference-based ingestion examples
+```text
+.codex_library/mods/<mod_id>/inbox/
+```
 
-Referenced files do not need to be copied into `inbox/` manually.
-Instead, the mod can declare them in:
+### Option B — reference external files
 
 ```text
 .codex_library/mods/<mod_id>/inbox/references.md
 ```
 
-This is especially useful for project-native assets such as SQL, JSON, YAML, Python, XML, or CSV files that already exist in place.
+### Option C — register remote URL sources
 
-## Remote ingestion examples
-
-Remote documentation can now be learned through registered URLs, materialized locally, and then processed like any other canonical inbox document.
-
-Example flow:
-
-```bash
-codex-context mod add-source android_core --url https://developer.android.com/guide --tag android --tag official-docs
-codex-context mod fetch-sources android_core
-codex-context mod learn android_core
+```text
+.codex_library/mods/<mod_id>/remote_sources/manifest.json
 ```
+
+Running the learning or ingestion flow again triggers processing through the existing pipeline.
 
 ---
 
@@ -529,7 +501,7 @@ The knowledge system is designed to integrate with MCP servers when available:
 
 - **filesystem MCP** — local document access
 - **git MCP** — repository awareness
-- **fetch MCP** — optional external enrichment or acquisition support
+- **fetch MCP** — optional external enrichment
 - **playwright MCP** — UI inspection for UX-related knowledge
 
 All MCP integrations remain **optional**.
@@ -541,7 +513,6 @@ The engine continues to function fully in **local-only mode**.
 # What This Is Not
 
 This project is **not**:
-
 - a prompt collection
 - an AI agent framework
 - a replacement for Codex
@@ -553,11 +524,11 @@ Instead, it is a **context orchestration layer** designed to help Codex maintain
 # Why This Exists
 
 Large AI-assisted projects frequently suffer from:
-
 - context fragmentation
 - repeated discovery work
 - token inefficiency
 - lack of long-term memory
+- noisy execution loops
 
 `codex_context_engine` is an experiment in **treating context as a first-class system**, not a temporary prompt artifact.
 
@@ -566,9 +537,9 @@ Large AI-assisted projects frequently suffer from:
 # Current Status
 
 The engine currently implements:
-
 - context planning
 - context optimization
+- communication compression for runtime updates
 - persistent failure memory
 - task-specific contextual memory
 - graph-based contextual relationships
@@ -576,21 +547,16 @@ The engine currently implements:
 - generic domain knowledge modules
 - document ingestion and processing
 - knowledge retrieval with minimal context loading
-- reference-based local file ingestion
-- remote documentation ingestion with local snapshot materialization
+- reference-based local ingestion
+- remote knowledge ingestion
 
 Together these components create a layered contextual architecture that progressively improves Codex performance on complex repositories.
 
 ---
 
-# Auto-Initialize Across Your Projects Directory
+# Auto-Initialize Across `~/projects`
 
-If you want every Git repository under your projects directory to be integrated automatically, use the cross-project installer plus the macOS `launchd` agent in `scripts/`.
-
-Default scan path:
-
-- `~/Documents/projects` when that directory exists
-- otherwise `~/projects`
+If you want every Git repository under `~/projects` to be integrated automatically, use the cross-project installer plus the macOS `launchd` agent in `scripts/`.
 
 Requirement:
 
@@ -609,16 +575,14 @@ Automatic background integration on macOS:
 ```
 
 What this does:
-
-- scans the default projects directory for Git repositories
+- scans `~/projects` for Git repositories
 - creates or updates `.codex_context_engine/state.json` in each repository
 - creates `AGENTS.md` when missing
 - appends or refreshes a managed `codex_context_engine` block inside an existing `AGENTS.md`
-- re-runs automatically at login, every 5 minutes, and whenever the configured projects directory changes
+- re-runs automatically at login, every 5 minutes, and whenever `~/projects` changes
 
 Useful environment variables:
-
-- `CODEX_PROJECTS_DIR` to target a directory other than the default detected projects directory
+- `CODEX_PROJECTS_DIR` to target a directory other than `~/projects`
 - `CODEX_ENGINE_REPO` to point to a shared engine repository in a different path
 - `CODEX_LAUNCH_AGENT_LABEL` to override the default `launchd` label
 
@@ -638,7 +602,7 @@ The engine follows a simple principle:
 
 Instead of rebuilding understanding every time, the system gradually accumulates structural and experiential knowledge.
 
-Over time this transforms Codex from a stateless assistant into a **context-aware development collaborator**.
+Over time this transforms Codex from a stateless assistant into a **context-aware and communication-efficient development collaborator**.
 
 ---
 

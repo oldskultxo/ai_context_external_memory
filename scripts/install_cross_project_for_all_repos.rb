@@ -51,6 +51,16 @@ def engine_block(repo_path)
     - Use graph expansion only in a bounded, budget-aware way.
     - Do not create duplicate repository-local memory stores unless a migration away from cross-project mode is explicitly requested.
     - Preserve existing global metrics, telemetry, memory, and failure history during maintenance.
+    - Runtime communication default is `caveman_full`.
+    - Do not emit intermediate execution updates by default while work is in progress.
+    - Emit a single final result unless the user explicitly asks for step-by-step updates.
+    - Apply compressed style to final debugging notes, patch explanations, implementation summaries, and execution results.
+    - Prefer compact structures such as `found -> cause -> fix`, `done -> files -> tests`, and `blocked -> reason -> need`.
+    - Avoid filler, greetings, repeated task restatement, and decorative formatting in runtime messages.
+    - Preserve explicit paths, commands, errors, risks, and decisions.
+    - Do not rewrite repository prose, docs, marketing, or narrative content into Caveman mode unless the user asks for it.
+    - If the user asks for normal long-form explanation, follow the user request over the default mode.
+    - If the user asks for intermediate updates, follow the user request over the default mode.
     #{AGENTS_END}
   MARKDOWN
 end
@@ -71,6 +81,13 @@ def state_payload(repo_path, installed_iteration)
     "project_name" => File.basename(repo_path),
     "repo_path" => repo_path,
     "installed_iteration" => installed_iteration,
+    "communication_mode" => "caveman_full",
+    "communication_layer" => "enabled",
+    "supported_communication_modes" => [
+      "caveman_lite",
+      "caveman_full",
+      "caveman_ultra"
+    ],
     "integration_mode" => "cross_project",
     "engine_repo_path" => ENGINE_REPO,
     "shared_state_path" => ENGINE_STATE,
@@ -90,7 +107,8 @@ def state_payload(repo_path, installed_iteration)
     "notes" => [
       "This repository consumes a shared codex_context_engine installation.",
       "Repository-local state is limited to integration metadata and runtime policy.",
-      "Do not create duplicate local memory layers unless cross-project mode is explicitly removed."
+      "Do not create duplicate local memory layers unless cross-project mode is explicitly removed.",
+      "Execution-time communication defaults to caveman_full: no intermediate updates, final output only, repository prose unchanged unless requested."
     ]
   }
 end
@@ -213,6 +231,8 @@ def update_projects_index(repos, installed_iteration)
       "telemetry_dir" => ".context_metrics/",
       "memory_dir" => ".codex_memory/",
       "installed_iteration" => installed_iteration,
+      "communication_mode" => "caveman_full",
+      "communication_layer" => "enabled",
       "last_seen_at" => TIMESTAMP
     }
   end
